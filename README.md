@@ -1,4 +1,4 @@
-# qbittorrent_management_script
+# qBittorrent Client Speed Management Script
 
 This Python script is designed to perform various management tasks on qBittorrent using its Web API. It can log in, reannounce torrents, set upload and download limits, and log relevant information.
 
