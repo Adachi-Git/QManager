@@ -1,0 +1,13 @@
+{
+    "qbittorrent_username": "your_username",
+    "qbittorrent_password": "your_password",
+    "qb_url": "http://localhost:8080",
+    "state": "downloading",  
+    "tag": "", 
+    "sort": "",
+    "reverse": false,
+    "limit": 20,
+    "offset": 0,
+    "upload_limit": 40000000,
+    "download_limit": 10000000
+}

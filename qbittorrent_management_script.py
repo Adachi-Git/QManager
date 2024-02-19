@@ -1,9 +1,10 @@
+import sys
+import json
 import requests
 import logging
 from datetime import datetime
 
 # Constants
-QB_URL = 'http://localhost:8080'
 ENDPOINTS = {
     'LOGIN': '/api/v2/auth/login',
     'REANNOUNCE': '/api/v2/torrents/reannounce',
@@ -11,12 +12,7 @@ ENDPOINTS = {
     'SET_DOWNLOAD_LIMIT': '/api/v2/torrents/setDownloadLimit',
 }
 
-# Set the log file path
 LOG_FILE_PATH = 'qbittorrent_management_log.txt'
-
-# User-specific login information
-USERNAME = 'admin'
-PASSWORD = 'adminadmin'
 
 def setup_logger():
     logger = logging.getLogger(__name__)
@@ -29,13 +25,26 @@ def setup_logger():
     logger.addHandler(file_handler)
     return logger
 
-def api_request(session, endpoint, data=None, cookies=None):
-    url = QB_URL + ENDPOINTS[endpoint]
-    headers = {'Referer': QB_URL} if endpoint == 'LOGIN' else {'Cookie': f'SID={cookies}'}
+def api_request(session, endpoint, data=None, cookies=None, qb_url=None):
+    url = qb_url + ENDPOINTS[endpoint]
+    headers = {'Referer': qb_url} if endpoint == 'LOGIN' else {'Cookie': f'SID={cookies}'}
     response = session.post(url, data=data, headers=headers)
     return response
 
-def main():
+def main(config_file):
+    try:
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        print("Config file not found.")
+        return
+    
+    qbittorrent_username = config.get('qbittorrent_username')
+    qbittorrent_password = config.get('qbittorrent_password')
+    qb_url = config.get('qb_url')
+    upload_limit = config.get('upload_limit', 30000000)
+    download_limit = config.get('download_limit', 10000000)
+
     session = requests.Session()
     logger = setup_logger()
 
@@ -44,14 +53,14 @@ def main():
 
     try:
         # 登录
-        login_response = api_request(session, 'LOGIN', {'username': USERNAME, 'password': PASSWORD})
+        login_response = api_request(session, 'LOGIN', {'username': qbittorrent_username, 'password': qbittorrent_password}, qb_url=qb_url)
         if login_response.status_code == 200:
             sid_cookie = login_response.cookies.get('SID')
             logger.info("Login successful. SID cookie: %s", sid_cookie)
             print("Login successful.")
 
             # 执行 reannounce
-            reannounce_response = api_request(session, 'REANNOUNCE', {'hashes': 'all'}, sid_cookie)
+            reannounce_response = api_request(session, 'REANNOUNCE', {'hashes': 'all'}, sid_cookie, qb_url=qb_url)
             if reannounce_response.status_code == 200:
                 logger.info("Reannounce successful.")
                 print("Reannounce successful.")
@@ -60,7 +69,7 @@ def main():
                 print(f"Reannounce failed. Status code: {reannounce_response.status_code}, {reannounce_response.text}")
 
             # 设置上传限制
-            upload_limit_response = api_request(session, 'SET_UPLOAD_LIMIT', {'hashes': 'all', 'limit': 50000000}, sid_cookie)
+            upload_limit_response = api_request(session, 'SET_UPLOAD_LIMIT', {'hashes': '|'.join(sys.argv[1:]), 'limit': upload_limit}, sid_cookie, qb_url=qb_url)
             if upload_limit_response.status_code == 200:
                 logger.info("Set upload limit successful.")
                 print("Set upload limit successful.")
@@ -69,7 +78,7 @@ def main():
                 print(f"Set upload limit failed. Status code: {upload_limit_response.status_code}, {upload_limit_response.text}")
 
             # 设置下载限制
-            download_limit_response = api_request(session, 'SET_DOWNLOAD_LIMIT', {'hashes': 'all', 'limit': 35000000}, sid_cookie)
+            download_limit_response = api_request(session, 'SET_DOWNLOAD_LIMIT', {'hashes': '|'.join(sys.argv[1:]), 'limit': download_limit}, sid_cookie, qb_url=qb_url)
             if download_limit_response.status_code == 200:
                 logger.info("Set download limit successful.")
                 print("Set download limit successful.")
@@ -90,4 +99,4 @@ def main():
         print("Script has completed.")
 
 if __name__ == "__main__":
-    main()
+    main("config.json")
