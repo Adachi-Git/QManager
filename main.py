@@ -25,8 +25,8 @@ def main():
     # 将哈希列表转换为字符串形式
     hash_list_str = "|".join(hash_list)
 
-    # 调用第二个脚本并传递哈希列表作为参数
-    subprocess.run(["python", "qbittorrent_management_script.py", hash_list_str])
+    # 调用并传递哈希列表作为参数
+    subprocess.run(["python", "qbittorrent_manager.py", hash_list_str])
 
 if __name__ == "__main__":
     main()
