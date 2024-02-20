@@ -8,6 +8,6 @@
     "reverse": false,
     "limit": 20,
     "offset": 0,
-    "upload_limit": 10000000,
-    "download_limit": 10000000
+    "upload_limit": 38000000,
+    "download_limit": 13000000
 }

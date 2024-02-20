@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 import sys
 import json
 import requests
 import logging
 from datetime import datetime
+import os
 
 # Constants
 ENDPOINTS = {
@@ -29,13 +31,16 @@ def setup_logger():
 def api_request(session, endpoint, data=None, cookies=None, qb_url=None):
     """发送API请求"""
     url = qb_url + ENDPOINTS[endpoint]
-    headers = {'Referer': qb_url} if endpoint == 'LOGIN' else {'Cookie': f'SID={cookies}'}
+    if endpoint == 'LOGIN':
+        headers = {'Referer': qb_url}
+    else:
+        headers = {'Cookie': 'SID=' + cookies}
     response = session.post(url, data=data, headers=headers)
     return response
 
 def login(session, qbittorrent_username, qbittorrent_password, qb_url):
     """登录到qBittorrent客户端"""
-    login_url = f"{qb_url}/api/v2/auth/login"
+    login_url = qb_url + "/api/v2/auth/login"
     login_data = {'username': qbittorrent_username, 'password': qbittorrent_password}
     headers = {'Referer': qb_url}
     
@@ -53,8 +58,8 @@ def login(session, qbittorrent_username, qbittorrent_password, qb_url):
 
 def reannounce_torrents(session, sid_cookie, qb_url):
     """重新汇报种子"""
-    reannounce_url = qb_url + ENDPOINTS['REANNOUNCE']
-    headers = {'Referer': qb_url, 'Cookie': f'SID={sid_cookie}'}
+    reannounce_url = qb_url + "/api/v2/torrents/reannounce"
+    headers = {'Referer': qb_url, 'Cookie': 'SID=' + sid_cookie}
     data = {'hashes': 'all'}
 
     response = api_request(session, 'REANNOUNCE', data=data, cookies=sid_cookie, qb_url=qb_url)
@@ -67,8 +72,8 @@ def reannounce_torrents(session, sid_cookie, qb_url):
 
 def set_upload_limit(session, sid_cookie, qb_url, upload_limit):
     """设置上传限速"""
-    upload_limit_url = qb_url + ENDPOINTS['SET_UPLOAD_LIMIT']
-    headers = {'Referer': qb_url, 'Cookie': f'SID={sid_cookie}'}
+    upload_limit_url = qb_url + "/api/v2/torrents/setUploadLimit"
+    headers = {'Referer': qb_url, 'Cookie': 'SID=' + sid_cookie}
     data = {'hashes': '|'.join(sys.argv[1:]), 'limit': upload_limit}
 
     response = api_request(session, 'SET_UPLOAD_LIMIT', data=data, cookies=sid_cookie, qb_url=qb_url)
@@ -81,8 +86,8 @@ def set_upload_limit(session, sid_cookie, qb_url, upload_limit):
 
 def set_download_limit(session, sid_cookie, qb_url, download_limit):
     """设置下载限速"""
-    download_limit_url = qb_url + ENDPOINTS['SET_DOWNLOAD_LIMIT']
-    headers = {'Referer': qb_url, 'Cookie': f'SID={sid_cookie}'}
+    download_limit_url = qb_url + "/api/v2/torrents/setDownloadLimit"
+    headers = {'Referer': qb_url, 'Cookie': 'SID=' + sid_cookie}
     data = {'hashes': '|'.join(sys.argv[1:]), 'limit': download_limit}
 
     response = api_request(session, 'SET_DOWNLOAD_LIMIT', data=data, cookies=sid_cookie, qb_url=qb_url)
@@ -93,7 +98,13 @@ def set_download_limit(session, sid_cookie, qb_url, download_limit):
         logging.error("Set download limit failed. Status code: %s, %s", response.status_code, response.text)
         return False
 
-def main(config_file):
+def main():
+    # 获取脚本所在目录的绝对路径
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 构建配置文件的绝对路径
+    config_file = os.path.join(script_dir, "config.json")
+
     try:
         with open(config_file, 'r') as f:
             config = json.load(f)
@@ -138,4 +149,4 @@ def main(config_file):
     print("Script has completed.")
 
 if __name__ == "__main__":
-    main("config.json")
+    main()
